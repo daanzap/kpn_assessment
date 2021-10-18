@@ -1,6 +1,7 @@
-from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
+from sqlalchemy.sql import func
 
 # DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 import settings
@@ -38,13 +39,13 @@ class Customer(Base):
         self.zipcode = zipcode
         self.country = country
 
-
     @classmethod
     def from_json(cls, data):
         return cls(**data)
 
     def to_json(self):
-        to_serialize = ['id', 'first_name', 'infix', 'last_name', 'address_street', 'address_number', 'city', 'zipcode', 'country']
+        to_serialize = ['id', 'first_name', 'infix', 'last_name', 'address_street', 'address_number', 'city', 'zipcode',
+                        'country']
         d = {}
         for attr_name in to_serialize:
             d[attr_name] = getattr(self, attr_name)
@@ -56,18 +57,15 @@ class Product(Base):
     __tablename__ = 'product'
     id = Column(Integer, primary_key=True)
     name = Column(String(50))
-    price = Column(Numeric(10,2))
+    price = Column(Numeric(10, 2))
     description = Column(String(500))
     image_url = Column(String(50))
-
 
     def __init__(self, name, price, description, image_url):
         self.name = name
         self.price = price
         self.description = description
         self.image_url = image_url
-
-
 
     @classmethod
     def from_json(cls, data):
@@ -87,31 +85,25 @@ class Purchase(Base):
     id = Column(Integer, primary_key=True)
     customer = Column(Integer, ForeignKey('customer.id'))
     product = Column(Integer, ForeignKey('product.id'))
-    price = Column(Numeric(10,2))
-    description = Column(String(500))
-    image_url = Column(String(50))
+    quantity = Column(Integer())
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    time_updated = Column(DateTime(timezone=True), onupdate=func.now())
 
-
-    def __init__(self, name, price, description, image_url):
-        self.name = name
-        self.price = price
-        self.description = description
-        self.image_url = image_url
-
-
+    def __init__(self, customer, product, quantity):
+        self.customer = customer
+        self.product = product
+        self.quantity = quantity
 
     @classmethod
     def from_json(cls, data):
         return cls(**data)
 
     def to_json(self):
-        to_serialize = ['id', 'name', 'price', 'description', 'image_url']
+        to_serialize = ['id', 'customer', 'product', 'quantity']
         d = {}
         for attr_name in to_serialize:
             d[attr_name] = getattr(self, attr_name)
         return d
-
-
 
 
 # creates database
